@@ -111,7 +111,10 @@ wss.on('connection', (ws) => {
 
             const broadcastData = JSON.stringify({
               type: MessageType.ROOM_RENAMED,
-              payload: { normRoomId, newName },
+              payload: {
+                roomId: normRoomId,
+                newName,
+              },
             });
 
             wss.clients.forEach((client) => {
@@ -134,7 +137,7 @@ wss.on('connection', (ws) => {
 
             const broadcastData = JSON.stringify({
               type: MessageType.ROOM_DELETED,
-              payload: { normRoomId },
+              payload: { roomId: normRoomId },
             });
 
             wss.clients.forEach((client) => {

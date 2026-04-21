@@ -33,11 +33,11 @@ const roomController = {
   },
 
   join: async (req, res) => {
-    const { id } = req.params; // Отримуємо id з URL
-    const { userId } = req.body;
+    const roomId = Number(req.params.id);
+    const userId = Number(req.body.userId);
 
     try {
-      await UserRoom.findOrCreate({ where: { roomId: id, userId } });
+      await UserRoom.findOrCreate({ where: { roomId, userId } });
       res.status(200).json({ message: 'Joined' });
     } catch (err) {
       res.status(500).json({ message: 'Error joining room' });
@@ -45,9 +45,10 @@ const roomController = {
   },
 
   checkMembership: async (req, res) => {
-    const { id, userId } = req.params;
+    const roomId = Number(req.params.id);
+    const userId = Number(req.params.userId);
     const membership = await UserRoom.findOne({
-      where: { roomId: id, userId },
+      where: { roomId, userId },
     });
 
     res.json({ isMember: !!membership });

@@ -111,3 +111,15 @@ button {
   display: flex;
   gap: 16px;
 }
+
+.deleted_overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #666;
+  font-style: italic;
+  height: 100%;
+  text-align: center;
+}

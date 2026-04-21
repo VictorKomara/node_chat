@@ -139,102 +139,108 @@ export const ChatWindow: React.FC<Props> = ({
 
   return (
     <>
-    {wasRoomDeleted ? (
-      <div className={styles.deleted_overlay}>
-        <h3>Кімнату було видалено 🗑️</h3>
-        <p>
-          Власник закрив цей чат. Будь ласка, оберіть іншу кімнату в меню зліва.
-        </p>
-        <button onClick={() => setActiveRoomId(null)}>Зрозуміло</button>
-      </div>
-    ) : (
-      <div className={styles.chat_window}>
-        <div className={styles.chat_header}>
-          <div className={styles.user_area}>
-            <h2>Привіт, {user.username}! Ласкаво просимо до чату</h2>
-            <button onClick={handleLogout}>Вийти</button>
+      {wasRoomDeleted ? (
+        <div className={styles.deleted_overlay}>
+          <h3>Кімнату було видалено 🗑️</h3>
+          <p>
+            Власник закрив цей чат. Будь ласка, оберіть іншу кімнату в меню
+            зліва.
+          </p>
+          <button onClick={() => setActiveRoomId(null)}>Зрозуміло</button>
+        </div>
+      ) : (
+        <div className={styles.chat_window}>
+          <div className={styles.chat_header}>
+            <div className={styles.user_area}>
+              <h2>Привіт, {user.username}! Ласкаво просимо до чату</h2>
+              <button onClick={handleLogout}>Вийти</button>
+            </div>
+
+            {isEditing ? (
+              <div className={styles.edit_area}>
+                <input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  autoFocus
+                />
+                <button onClick={handleRename}>Зберегти</button>
+                <button onClick={() => setIsEditing(false)}>Скасувати</button>
+              </div>
+            ) : (
+              <>
+                <h3># {currentRoom?.name}</h3>
+                {isOwner && (
+                  <div className={styles.admin_controls}>
+                    <button
+                      className={styles.admin_button}
+                      onClick={() => {
+                        setIsEditing(true);
+                        if (currentRoom?.name) {
+                          setEditName(currentRoom.name);
+                        }
+                      }}
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      className={styles.admin_button}
+                      onClick={handleDelete}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
-          {isEditing ? (
-            <div className={styles.edit_area}>
-              <input
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                autoFocus
-              />
-              <button onClick={handleRename}>Зберегти</button>
-              <button onClick={() => setIsEditing(false)}>Скасувати</button>
-            </div>
+          {isLoading ? (
+            <h3>Завантаження повідомлень...</h3>
           ) : (
             <>
-              <h3># {currentRoom?.name}</h3>
-              {isOwner && (
-                <div className={styles.admin_controls}>
-                  <button
-                    className={styles.admin_button}
-                    onClick={() => {
-                      setIsEditing(true);
-                      if (currentRoom?.name) {
-                        setEditName(currentRoom.name);
-                      }
-                    }}
-                  >
-                    ✏️
-                  </button>
-                  <button className={styles.admin_button} onClick={handleDelete}>
-                    🗑️
+              {!isMember ? (
+                <div className={styles.join_overlay}>
+                  <p>Ви ще не приєдналися до цієї групи</p>
+                  <button onClick={handleJoinAction}>
+                    Приєднатися до групи
                   </button>
                 </div>
+              ) : (
+                <>
+                  <div className={styles.messages_list}>
+                    {messages.map((msg, index) => (
+                      <div
+                        key={index}
+                        className={cn(styles.message, {
+                          [styles.own]: msg.userId === userId,
+                        })}
+                      >
+                        <span className={styles.author}>{msg.authorName}</span>
+                        <p className={styles.text_message}>{msg.text}</p>
+                        <span className={styles.time}>
+                          {new Date(msg.createdAt).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className={styles.input_area}>
+                    <input
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                    />
+                    <button onClick={handleSend}>Відправити</button>
+                  </div>
+                </>
               )}
             </>
           )}
         </div>
-
-        {isLoading ? (
-          <h3>Завантаження повідомлень...</h3>
-        ) : (
-          <>
-            {!isMember ? (
-              <div className={styles.join_overlay}>
-                <p>Ви ще не приєдналися до цієї групи</p>
-                <button onClick={handleJoinAction}>Приєднатися до групи</button>
-              </div>
-            ) : (
-              <>
-                <div className={styles.messages_list}>
-                  {messages.map((msg, index) => (
-                    <div
-                      key={index}
-                      className={cn(styles.message, {
-                        [styles.own]: msg.userId === userId,
-                      })}
-                    >
-                      <span className={styles.author}>{msg.authorName}</span>
-                      <p className={styles.text_message}>{msg.text}</p>
-                      <span className={styles.time}>
-                        {new Date(msg.createdAt).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className={styles.input_area}>
-                  <input
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  />
-                  <button onClick={handleSend}>Відправити</button>
-                </div>
-              </>
-            )}
-          </>
-        )}
-      </div>
-    )};
+      )}
     </>
   );
 };
