@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import type { ChatMessage, Room } from '../../../src/shared/types';
+import type { ChatMessage, Room } from '../shared/types';
 
 export interface ChatContextType {
   messages: ChatMessage[];

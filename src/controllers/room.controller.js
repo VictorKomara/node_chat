@@ -1,13 +1,11 @@
-/* eslint-disable no-console */
-import type { Request, Response } from 'express';
-import { Room } from '../models/Room.model';
-import { Message } from '../models/Message.model';
-import { User } from '../models/User.model';
-import { UserRoom } from '../models/UserRoom.model';
+'use strict';
 
-export const roomController = {
+/* eslint-disable no-console */
+const { Room, Message, User, UserRoom } = require('../models');
+
+const roomController = {
   // Отримати всі доступні кімнати
-  getAll: async (req: Request, res: Response) => {
+  getAll: async (req, res) => {
     try {
       const rooms = await Room.findAll();
 
@@ -18,7 +16,7 @@ export const roomController = {
   },
 
   // Створити нову кімнату
-  create: async (req: Request, res: Response) => {
+  create: async (req, res) => {
     try {
       const { name } = req.body;
 
@@ -34,13 +32,7 @@ export const roomController = {
     }
   },
 
-  // join: async (req: Request, res: Response) => {
-  //   const { roomId, userId } = req.body;
-  //   await UserRoom.create({ roomId, userId });
-  //   res.status(200).json({ message: 'Joined successfully' });
-  // },
-
-  join: async (req: Request, res: Response) => {
+  join: async (req, res) => {
     const { id } = req.params; // Отримуємо id з URL
     const { userId } = req.body;
 
@@ -52,7 +44,7 @@ export const roomController = {
     }
   },
 
-  checkMembership: async (req: Request, res: Response) => {
+  checkMembership: async (req, res) => {
     const { id, userId } = req.params;
     const membership = await UserRoom.findOne({
       where: { roomId: id, userId },
@@ -62,7 +54,7 @@ export const roomController = {
   },
 
   // Отримати історію повідомлень кімнати (Найважливіше!)
-  getMessages: async (req: Request, res: Response) => {
+  getMessages: async (req, res) => {
     try {
       const { id } = req.params;
 
@@ -71,6 +63,7 @@ export const roomController = {
         include: [
           {
             model: User,
+            as: 'author',
             attributes: ['username'], // Тягнемо тільки ім'я автора
           },
         ],
@@ -94,3 +87,5 @@ export const roomController = {
     }
   },
 };
+
+module.exports = { roomController };

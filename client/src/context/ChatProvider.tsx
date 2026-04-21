@@ -5,8 +5,8 @@ import {
   type ChatMessage,
   type WSMessage,
   type Room,
-} from '../../../src/shared/types';
-import { MessageType } from '../../../src/shared/types';
+} from '../shared/types';
+import { MessageType } from '../shared/types';
 
 // Розширюємо тип для WebSocket, якщо потрібно, або використовуємо стандартний
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({

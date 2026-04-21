@@ -2,22 +2,17 @@
 
 'use strict';
 
-import 'dotenv/config';
-import express from 'express';
-import http from 'http';
-import cors from 'cors';
-import { WebSocketServer, WebSocket } from 'ws';
-import { initDB } from './db';
-import { roomRouter } from './routes/room.router';
-import { usersRouter } from './routes/users.router';
-import { MessageType, WSMessage } from './shared/types';
-import { Message } from './models/Message.model';
-import { User } from './models/User.model';
-import { Room } from './models/Room.model';
+require('dotenv').config();
 
-interface ExtendedWebSocket extends WebSocket {
-  currentRoom?: number;
-}
+const express = require('express');
+const cors = require('cors');
+const http = require('http');
+const { WebSocketServer, WebSocket } = require('ws');
+const { initDB } = require('./db');
+const { Room, Message, User } = require('./models');
+const { roomRouter } = require('./routes/room.router');
+const { usersRouter } = require('./routes/users.router');
+const { MessageType } = require('./shared/types');
 
 const app = express();
 
@@ -34,27 +29,27 @@ app.use((req, res) => {
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
-// Використовуємо Record для динамічних кімнат
-const rooms: Record<number, Set<ExtendedWebSocket>> = {};
+const rooms = {};
 
 // WebSocket логіка тут...
-wss.on('connection', (ws: ExtendedWebSocket) => {
+wss.on('connection', (ws) => {
   console.log('Нове підключення встановлено');
 
-  ws.on('message', async (data: string) => {
+  ws.on('message', async (data) => {
     try {
-      const message: WSMessage = JSON.parse(data);
-      const { type, payload } = message; // Деструктуризація!
+      const rawData = typeof data === 'string' ? data : data.toString();
+      const message = JSON.parse(rawData);
+      const { type, payload } = message;
 
       console.log('Отримано повідомлення:', message);
 
       switch (type) {
         case MessageType.ROOM_JOIN: {
-          const rId = payload.roomId;
+          const normRoomId = Number(payload.roomId);
 
           // Якщо кімнати ще немає в пам'яті сервера — створюємо її
-          if (!rooms[rId]) {
-            rooms[rId] = new Set();
+          if (!rooms[normRoomId]) {
+            rooms[normRoomId] = new Set();
           }
 
           // Видаляємо з попередньої кімнати, якщо була
@@ -62,13 +57,13 @@ wss.on('connection', (ws: ExtendedWebSocket) => {
             rooms[ws.currentRoom].delete(ws);
           }
 
-          if (ws.currentRoom === rId) {
+          if (ws.currentRoom === normRoomId) {
             break;
           }
 
-          rooms[rId].add(ws);
-          ws.currentRoom = rId;
-          console.log(`Користувач приєднався до кімнати ${rId}`);
+          rooms[normRoomId].add(ws);
+          ws.currentRoom = normRoomId;
+          console.log(`Користувач приєднався до кімнати ${normRoomId}`);
 
           break;
         }
@@ -77,11 +72,12 @@ wss.on('connection', (ws: ExtendedWebSocket) => {
           try {
             const { name, userId } = payload; // Отримуємо name
             // та userId від клієнта
+            const normUserId = Number(userId);
 
             // 1. Створюємо кімнату в БД
             const newRoom = await Room.create({
               name,
-              ownerId: userId, // Записуємо власника!
+              ownerId: normUserId, // Записуємо власника!
             });
 
             // 2. Розсилаємо ВУСІМ підключеним клієнтам (wss.clients)
@@ -104,16 +100,18 @@ wss.on('connection', (ws: ExtendedWebSocket) => {
 
         case MessageType.ROOM_RENAME: {
           const { roomId, newName, userId } = payload;
-          const room = await Room.findByPk(roomId);
+          const normRoomId = Number(roomId);
+          const normUserId = Number(userId);
+          const room = await Room.findByPk(normRoomId);
 
           // Перевірка прав: тільки власник може редагувати
-          if (room && room.ownerId === userId) {
+          if (room && room.ownerId === normUserId) {
             room.name = newName;
             await room.save();
 
             const broadcastData = JSON.stringify({
               type: MessageType.ROOM_RENAMED,
-              payload: { roomId, newName },
+              payload: { normRoomId, newName },
             });
 
             wss.clients.forEach((client) => {
@@ -127,14 +125,16 @@ wss.on('connection', (ws: ExtendedWebSocket) => {
 
         case MessageType.ROOM_DELETE: {
           const { roomId, userId } = payload;
-          const room = await Room.findByPk(roomId);
+          const normRoomId = Number(roomId);
+          const normUserId = Number(userId);
+          const room = await Room.findByPk(normRoomId);
 
-          if (room && room.ownerId === userId) {
-            await room.destroy(); // Переконайся, що в моделях стоїть CASCADE
+          if (room && room.ownerId === normUserId) {
+            await room.destroy();
 
             const broadcastData = JSON.stringify({
               type: MessageType.ROOM_DELETED,
-              payload: { roomId },
+              payload: { normRoomId },
             });
 
             wss.clients.forEach((client) => {
@@ -149,18 +149,21 @@ wss.on('connection', (ws: ExtendedWebSocket) => {
         case MessageType.MESSAGE_SEND: {
           const { roomId, userId, text } = payload;
 
+          const normRoomId = Number(roomId);
+          const normUserId = Number(userId);
+
           try {
             // 1. Зберігаємо в базу даних
             const newMessage = await Message.create({
               text,
-              userId,
-              roomId,
+              userId: normUserId,
+              roomId: normRoomId,
             });
 
             // 2. Знаходимо автора, щоб відправити ім'я на фронтенд
-            const user = await User.findByPk(userId);
+            const user = await User.findByPk(normUserId);
 
-            const clients = rooms[roomId];
+            const clients = rooms[normRoomId];
 
             if (clients) {
               clients.forEach((client) => {

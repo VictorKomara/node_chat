@@ -1,9 +1,11 @@
-/* eslint-disable no-console */
-import type { Request, Response } from 'express';
-import { User } from '../models/User.model';
+'use strict';
 
-export const usersController = {
-  login: async (req: Request, res: Response) => {
+/* eslint-disable no-console */
+
+const { User } = require('../models/User.model');
+
+const usersController = {
+  login: async (req, res) => {
     const { username } = req.body;
 
     if (!username || username.trim().length < 2) {
@@ -25,7 +27,7 @@ export const usersController = {
     }
   },
 
-  getAll: async (req: Request, res: Response) => {
+  getAll: async (req, res) => {
     try {
       const users = await User.findAll();
 
@@ -35,3 +37,5 @@ export const usersController = {
     }
   },
 };
+
+module.exports = { usersController };
